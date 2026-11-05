@@ -1,0 +1,8 @@
+assets/
+private/
+runs/
+__pycache__/
+*.pyc
+.venv/
+# the patch itself is a release asset (296 MB)
+weights/final_patch.pt

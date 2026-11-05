@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite the blog post below."
+title: "weight-space-trigger: code, data and weight patch for Hiding a Rule Inside Another Model's Weights"
+type: software
+authors:
+  - family-names: Lin
+    given-names: Jinhong
+    affiliation: "University of Wisconsin-Madison"
+date-released: 2026-11-05
+version: "1.0"
+license: MIT
+repository-code: "https://github.com/JonnesLin/weight-space-trigger"
+url: "https://jonneslin.github.io/weight-space-trigger-en.html"
+keywords:
+  - weight-space programming
+  - model editing
+  - backdoors
+  - interpretability
+  - AI safety
+preferred-citation:
+  type: blog
+  title: "Hiding a Rule Inside Another Model's Weights"
+  authors:
+    - family-names: Lin
+      given-names: Jinhong
+  year: 2026
+  month: 11
+  url: "https://jonneslin.github.io/weight-space-trigger-en.html"

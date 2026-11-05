@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+"""Run a Python script from your workspace on the GPU.
+
+Usage:
+  ./gpu_run analysis/probe.py [args ...]       run it and print its output when it finishes
+  ./gpu_run --timeout 1800 analysis/probe.py   allow it up to 1,800 s (default 600, at most 3,600)
+  ./gpu_run --result <job id>                  print the output of a job you stopped waiting for
+
+The script runs on an NVIDIA GPU (16 GB) with the same python3, torch and numpy as your
+shell, started in the workspace folder. It can read and write files in the workspace and nothing outside it, and it has
+no network. Jobs run one at a time, in the order sent. In the script, use torch.device("cuda").
+The job id is printed when the job is sent; if your command is stopped before the job ends, the job keeps running and
+--result <job id> prints its output once it is done.
+"""
+import argparse
+import json
+import os
+import sys
+import time
+import uuid
+from pathlib import Path
+
+reqdir = Path(__file__).resolve().parent / "gpu_requests"
+ap = argparse.ArgumentParser(description="Run a Python script from your workspace on the GPU.")
+ap.add_argument("--timeout", type=int, default=600, help="seconds the job may run (default 600, at most 3600)")
+ap.add_argument("--result", metavar="JOB_ID", help="print the output of an earlier job")
+ap.add_argument("script", nargs="?")
+ap.add_argument("args", nargs=argparse.REMAINDER, help="arguments passed to the script")
+a = ap.parse_args()
+
+if a.result:
+    jid = a.result
+else:
+    if not a.script:
+        ap.error("give a script to run, or --result <job id>")
+    script = Path(a.script).resolve()
+    if not script.is_file():
+        sys.exit(f"no such file: {script}")
+    jid = uuid.uuid4().hex[:12]
+    tmp = reqdir / f"job_{jid}.tmp"
+    tmp.write_text(json.dumps({"script": str(script), "args": a.args, "timeout": a.timeout}))
+    os.replace(tmp, reqdir / f"job_{jid}.json")
+    print(f"[gpu_run] job {jid} sent", file=sys.stderr, flush=True)
+
+out = reqdir / f"out_{jid}.json"
+if a.result and not (reqdir / f"job_{jid}.json").exists():
+    sys.exit(f"no job {jid}")
+while not out.exists():
+    time.sleep(0.5)
+r = json.loads(out.read_text())
+sys.stdout.write(r.get("stdout") or "")
+sys.stderr.write(r.get("stderr") or "")
+note = f", {r['error']}" if r.get("error") else ""
+print(f"[gpu_run] job {jid}: return code {r.get('returncode')}, {r.get('seconds')} s{note}", file=sys.stderr)
+sys.exit(r["returncode"] if isinstance(r.get("returncode"), int) else 1)
